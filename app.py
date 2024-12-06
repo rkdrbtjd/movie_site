@@ -200,52 +200,70 @@ def main():
                 st.markdown("---")
 
                 # 영화에 대한 평점 표시
-                movie_ratings = [r['rating_value'] for r in ratings if r['movie_id'] == movie['movie_id']]
-                if movie_ratings:
-                    avg_rating = round(sum(movie_ratings) / len(movie_ratings), 2)
-                    st.write(f"사이트 평점: {'⭐' * int(avg_rating)} ({avg_rating}/10)")
-                else:
-                    st.write("아직 평점이 없습니다.")
+                # movie_ratings 처리
+movie_ratings = [
+    r.get('rating_value', 0)  # 기본값으로 안전하게 처리
+    for r in ratings
+    if r.get('movie_id') == movie.get('movie_id')
+]
 
-                movie_reviews = [
-                    (r['user_id'], r['review_text']) for r in ratings
-                    if r['movie_id'] == movie['movie_id'] and r.get('review_text')
-                ]
+if movie_ratings:
+    avg_rating = round(sum(movie_ratings) / len(movie_ratings), 2)
+    st.write(f"사이트 평점: {'⭐' * int(avg_rating)} ({avg_rating}/10)")
+else:
+    st.write("아직 평점이 없습니다.")
 
-                if movie_reviews:
-                    st.write("리뷰:")
-                    for username, review in movie_reviews:
-                        st.write(f"- **{username}**: {review}")
-                else:
-                    st.write("아직 리뷰가 없습니다.")
+# movie_reviews 처리
+movie_reviews = [
+    (r.get('user_id', '알 수 없음'), r.get('review_text', ''))
+    for r in ratings
+    if r.get('movie_id') == movie.get('movie_id') and r.get('review_text')
+]
 
-                if st.session_state.user:
-                    if any(r['user_id'] == st.session_state.user and r['movie_id'] == movie['movie_id'] for r in ratings):
-                        st.info("이미 이 영화에 평점과 리뷰를 남겼습니다.")
-                    else:
-                        rating = st.number_input(
-                            f"평점을 선택하세요 ({movie['title']})", min_value=0.0, max_value=10.0, step=0.1, format="%.2f"
-                        )
-                        review = st.text_area(f"리뷰를 작성하세요 ({movie['title']})", placeholder="영화를 보고 느낀 점을 적어보세요...")
+if movie_reviews:
+    st.write("리뷰:")
+    for username, review in movie_reviews:
+        st.write(f"- **{username}**: {review}")
+else:
+    st.write("아직 리뷰가 없습니다.")
 
-                        if st.button(f"'{movie['title']}' 평점 및 리뷰 남기기", key=f"rate-review-{movie['title']}"):
-                            ratings.append({
-                                'user_id': st.session_state.user,
-                                'movie_id': movie['movie_id'],
-                                'rating_value': round(rating, 2),
-                                'review_text': review if review else None
-                            })
-                            save_ratings(ratings)
-                            st.success("평점과 리뷰가 저장되었습니다.")
+# 평점 및 리뷰 작성
+if st.session_state.user:
+    if any(
+        r.get('user_id') == st.session_state.user and r.get('movie_id') == movie.get('movie_id')
+        for r in ratings
+    ):
+        st.info("이미 이 영화에 평점과 리뷰를 남겼습니다.")
+    else:
+        rating = st.number_input(
+            f"평점을 선택하세요 ({movie.get('title', '영화 제목 없음')})",
+            min_value=0.0,
+            max_value=10.0,
+            step=0.1,
+            format="%.2f"
+        )
+        review = st.text_area(
+            f"리뷰를 작성하세요 ({movie.get('title', '영화 제목 없음')})",
+            placeholder="영화를 보고 느낀 점을 적어보세요..."
+        )
 
-                            # GitHub 업데이트
-                            try:
-                                save_ratings_to_github("movie_ratings.csv", RATINGS_FILE_PATH)
-                                st.success("GitHub에 업데이트가 성공적으로 반영되었습니다.")
-                            except requests.exceptions.RequestException as e:
-                                st.error(f"GitHub 업데이트 실패: {e}")
-                            except Exception as e:
-                                st.error(f"예기치 못한 오류 발생: {e}")
+        if st.button(f"'{movie.get('title', '영화 제목 없음')}' 평점 및 리뷰 남기기", key=f"rate-review-{movie.get('title', 'unknown')}"):
+            ratings.append({
+                'user_id': st.session_state.user,
+                'movie_id': movie.get('movie_id'),
+                'rating_value': round(rating, 2),
+                'review_text': review if review else None
+            })
+            save_ratings(ratings)
+            st.success("평점과 리뷰가 저장되었습니다.")
+
+            try:
+                save_ratings_to_github("movie_ratings.csv", RATINGS_FILE_PATH)
+                st.success("GitHub에 업데이트가 성공적으로 반영되었습니다.")
+            except requests.exceptions.RequestException as e:
+                st.error(f"GitHub 업데이트 실패: {e}")
+            except Exception as e:
+                st.error(f"예기치 못한 오류 발생: {e}")
 
 
     # 추천 영화
