@@ -162,7 +162,7 @@ def main():
                 st.markdown("---")
 
                 # 영화에 대한 평점 표시
-               movie_ratings = [r.get('rating') for r in ratings if r.get('movie') == movie.get('title')]
+              movie_ratings = [r['rating'] for r in ratings if r['movie'] == movie['title']]
                 if movie_ratings:
                     avg_rating = round(sum(movie_ratings) / len(movie_ratings), 2)
                     st.write(f"사이트 평점: {'⭐' * int(avg_rating)} ({avg_rating}/10)")
