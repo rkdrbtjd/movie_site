@@ -172,7 +172,7 @@ def main():
                 else:
                     st.write("아직 평점이 없습니다.")
 
-                movie_reviews = [r['review'] for r in ratings if r['movie'] == movie['title'] and r.get('review') is not None]
+                movie_reviews = [r['review_text'] for r in ratings if r['movie_id'] == movie['movie_id'] and r.get('review_text') is not None]
                 if movie_reviews:
                     st.write("리뷰:")
                     for review in movie_reviews:
