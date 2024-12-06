@@ -5,16 +5,6 @@ import os
 
 # CSV 파일 로드
 @st.cache_data
-def fetch_latest_movie_data_from_github():
-    GITHUB_API_URL = "https://raw.githubusercontent.com/YourUsername/YourRepo/main/movie_data.csv"
-    response = requests.get(GITHUB_API_URL)
-    if response.status_code == 200:
-        with open("movie_data.csv", "wb") as file:
-            file.write(response.content)  # 최신 데이터를 로컬에 저장
-        st.success("GitHub에서 최신 데이터를 가져왔습니다.")
-    else:
-        st.error(f"GitHub에서 데이터를 가져오지 못했습니다. 상태 코드: {response.status_code}")
-
 def load_data():
     try:
         df = pd.read_csv("movie_data.csv", encoding='utf-8')  # 'cp949'를 'utf-8'로 변경
@@ -23,28 +13,23 @@ def load_data():
     except Exception as e:
         st.error(f"데이터 로드 오류: {e}")
         return pd.DataFrame()
-        
-def save_users(users, file_path="movie_users.csv"):
-    """사용자 데이터를 CSV 파일에 저장"""
-    pd.DataFrame(users).to_csv(file_path, index=False, encoding='utf-8')
 
-def load_users(file_path="movie_users.csv"):
-    """CSV 파일에서 사용자 데이터를 로드"""
-    if os.path.exists(file_path):
-        data = pd.read_csv(file_path, encoding='utf-8')
-        if data.empty:
-            return []
-        return data.to_dict('records')
+def save_users(users):
+    pd.DataFrame(users).to_csv("movie_users.csv", index=False, encoding='cp949')
+
+def load_users():
+    path = "movie_users.csv"
+    if os.path.exists(path):
+        return pd.read_csv(path, encoding='cp949').to_dict('records')
     return []
+
+def save_ratings(ratings):
+    pd.DataFrame(ratings).to_csv("movie_ratings.csv", index=False, encoding='cp949')
 
 def load_ratings():
     path = "movie_ratings.csv"
     if os.path.exists(path):
-        data = pd.read_csv(path, encoding='cp949')
-        # 열 이름 정리 (오타 수정)
-        data.columns = data.columns.str.strip().str.lower()
-        data.rename(columns={"raitng_id": "rating_id"}, inplace=True)
-        return data.to_dict('records')
+        return pd.read_csv(path, encoding='cp949').to_dict('records')
     return []
 
 def hash_password(password):
@@ -165,14 +150,14 @@ def main():
                 st.markdown("---")
 
                 # 영화에 대한 평점 표시
-                movie_ratings = [r['rating_value'] for r in ratings if r['movie_id'] == movie['movie_id']]
+                movie_ratings = [r['rating'] for r in ratings if r['movie'] == movie['title']]
                 if movie_ratings:
                     avg_rating = round(sum(movie_ratings) / len(movie_ratings), 2)
                     st.write(f"사이트 평점: {'⭐' * int(avg_rating)} ({avg_rating}/10)")
                 else:
                     st.write("아직 평점이 없습니다.")
 
-                movie_reviews = [r['review_text'] for r in ratings if r['movie_id'] == movie['movie_id'] and r.get('review_text') is not None]
+                movie_reviews = [r['review'] for r in ratings if r['movie'] == movie['title'] and r.get('review') is not None]
                 if movie_reviews:
                     st.write("리뷰:")
                     for review in movie_reviews:
@@ -181,23 +166,24 @@ def main():
                     st.write("아직 리뷰가 없습니다.")
 
                 if st.session_state.user:
-                    if any(r['user_id'] == st.session_state.user and r['movie_id'] == movie['movie_id'] for r in ratings):
+                    if any(r['username'] == st.session_state.user and r['movie'] == movie['title'] for r in ratings):
                         st.info("이미 이 영화에 평점과 리뷰를 남겼습니다.")
                     else:
-                        rating = st.number_input(f"평점을 선택하세요 ({movie['movie_id']})", min_value=0.0, max_value=10.0, step=0.1, format="%.2f")
-                        review = st.text_area(f"리뷰를 작성하세요 ({movie['movie_id']})", placeholder="영화를 보고 느낀 점을 적어보세요...")
+                        rating = st.number_input(f"평점을 선택하세요 ({movie['title']})", min_value=0.0, max_value=10.0, step=0.1, format="%.2f")
+                        review = st.text_area(f"리뷰를 작성하세요 ({movie['title']})", placeholder="영화를 보고 느낀 점을 적어보세요...")
 
-                        if st.button(f"'{movie['movie_id']}' 평점 및 리뷰 남기기", key=f"rate-review-{movie['movie_id']}"):
+                        if st.button(f"'{movie['title']}' 평점 및 리뷰 남기기", key=f"rate-review-{movie['title']}"):
                             ratings.append({
                                 'username': st.session_state.user, 
-                                'movie': movie['movie_id'], 
+                                'movie': movie['title'], 
                                 'rating': round(rating, 2),
                                 'review': review if review else None
                             })
                             save_ratings(ratings)
                             st.success("평점과 리뷰가 저장되었습니다.")
 
-with tab2:
+    # 추천 영화
+    with tab2:
         st.header("⭐ 추천 영화")
 
         if not st.session_state.user:
