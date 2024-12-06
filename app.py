@@ -36,13 +36,15 @@ def load_users(file_path="movie_users.csv"):
             return []
         return data.to_dict('records')
     return []
-def save_ratings(ratings):
-    pd.DataFrame(ratings).to_csv("movie_ratings.csv", index=False, encoding='cp949')
 
 def load_ratings():
     path = "movie_ratings.csv"
     if os.path.exists(path):
-        return pd.read_csv(path, encoding='cp949').to_dict('records')
+        data = pd.read_csv(path, encoding='cp949')
+        # 열 이름 정리 (오타 수정)
+        data.columns = data.columns.str.strip().str.lower()
+        data.rename(columns={"raitng_id": "rating_id"}, inplace=True)
+        return data.to_dict('records')
     return []
 
 def hash_password(password):
