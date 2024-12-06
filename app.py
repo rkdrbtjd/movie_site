@@ -5,15 +5,6 @@ import os
 
 # CSV 파일 로드
 @st.cache_data
-def load_data():
-    try:
-        df = pd.read_csv("movie_data.csv", encoding='utf-8')  # 'cp949'를 'utf-8'로 변경
-        df.columns = df.columns.str.strip().str.lower()
-        return df
-    except Exception as e:
-        st.error(f"데이터 로드 오류: {e}")
-        return pd.DataFrame()
-
 def fetch_latest_movie_data_from_github():
     GITHUB_API_URL = "https://raw.githubusercontent.com/YourUsername/YourRepo/main/movie_data.csv"
     response = requests.get(GITHUB_API_URL)
@@ -23,6 +14,17 @@ def fetch_latest_movie_data_from_github():
         st.success("GitHub에서 최신 데이터를 가져왔습니다.")
     else:
         st.error(f"GitHub에서 데이터를 가져오지 못했습니다. 상태 코드: {response.status_code}")
+
+def load_data():
+    try:
+        df = pd.read_csv("movie_data.csv", encoding='utf-8')  # 'cp949'를 'utf-8'로 변경
+        df.columns = df.columns.str.strip().str.lower()
+        return df
+    except Exception as e:
+        st.error(f"데이터 로드 오류: {e}")
+        return pd.DataFrame()
+
+
         
 def save_users(users):
     pd.DataFrame(users).to_csv("movie_users.csv", index=False, encoding='cp949')
