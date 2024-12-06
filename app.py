@@ -181,16 +181,16 @@ def main():
                     st.write("아직 리뷰가 없습니다.")
 
                 if st.session_state.user:
-                    if any(r['username'] == st.session_state.user and r['movie'] == movie['title'] for r in ratings):
+                    if any(r['user_id'] == st.session_state.user and r['movie_id'] == movie['movie_id'] for r in ratings):
                         st.info("이미 이 영화에 평점과 리뷰를 남겼습니다.")
                     else:
-                        rating = st.number_input(f"평점을 선택하세요 ({movie['title']})", min_value=0.0, max_value=10.0, step=0.1, format="%.2f")
-                        review = st.text_area(f"리뷰를 작성하세요 ({movie['title']})", placeholder="영화를 보고 느낀 점을 적어보세요...")
+                        rating = st.number_input(f"평점을 선택하세요 ({movie['movie_id']})", min_value=0.0, max_value=10.0, step=0.1, format="%.2f")
+                        review = st.text_area(f"리뷰를 작성하세요 ({movie['movie_id']})", placeholder="영화를 보고 느낀 점을 적어보세요...")
 
-                        if st.button(f"'{movie['title']}' 평점 및 리뷰 남기기", key=f"rate-review-{movie['title']}"):
+                        if st.button(f"'{movie['movie_id']}' 평점 및 리뷰 남기기", key=f"rate-review-{movie['movie_id']}"):
                             ratings.append({
                                 'username': st.session_state.user, 
-                                'movie': movie['title'], 
+                                'movie': movie['movie_id'], 
                                 'rating': round(rating, 2),
                                 'review': review if review else None
                             })
