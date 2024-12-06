@@ -14,6 +14,16 @@ def load_data():
         st.error(f"데이터 로드 오류: {e}")
         return pd.DataFrame()
 
+def fetch_latest_movie_data_from_github():
+    GITHUB_API_URL = "https://raw.githubusercontent.com/YourUsername/YourRepo/main/movie_data.csv"
+    response = requests.get(GITHUB_API_URL)
+    if response.status_code == 200:
+        with open("movie_data.csv", "wb") as file:
+            file.write(response.content)  # 최신 데이터를 로컬에 저장
+        st.success("GitHub에서 최신 데이터를 가져왔습니다.")
+    else:
+        st.error(f"GitHub에서 데이터를 가져오지 못했습니다. 상태 코드: {response.status_code}")
+        
 def save_users(users):
     pd.DataFrame(users).to_csv("movie_users.csv", index=False, encoding='cp949')
 
