@@ -47,3 +47,4 @@ movie_id,distributor,title,director,actor,genre,release_date,running_time,rating
 12345678,rbtjd,rbtjd,rbtjd,rbtjd,rbtjd,2025-5-25,95.0,0.0,N,
 123454,미션,미션,미션,미션,미션,2032-05-28,95.0,0.0,N,file:///C:/Users/%EA%B0%95%EA%B7%9C%EC%84%B1/AppData/Local/Temp/d9641337-8932-4fbc-8f1d-d65e44dff63d_streamlit-movie-main%20(1).zip.63d/streamlit-movie-main/poster_url/1%EC%8A%B9.webp
 1234,rbtjd,rbtjd,rbtjd,rbtjd,rbtjd,2024-12-15,54.0,0.0,N,미션.webp
+20140048,마블,어벤져스1,조스 웨던,"로버트 다우니 주니어, 크리스 에반스, 마크 러팔로",애니,2011-04-25,143,7.8,N,어벤져스1.webp
