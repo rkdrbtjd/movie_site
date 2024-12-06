@@ -6,10 +6,10 @@ import base64
 import requests
 
 # GitHub API 관련 설정
-GITHUB_TOKEN = "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"
-GITHUB_USERNAME = "Duke011223"
-REPO_NAME = "streamlit-movie"
-RATINGS_FILE_PATH = "movie_ratings.csv"
+GITHUB_TOKEN = "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"
+REPO_OWNER = "rkdrbtjd"  # 본인의 GitHub 사용자명
+REPO_NAME = "movie_site"   # 레포지토리 이름
+FILE_PATH = "movie_data.csv"         # GitHub 파일 경로
 
 # GitHub 파일 업데이트 함수
 def save_ratings_to_github(local_file_path, repo_file_path):
