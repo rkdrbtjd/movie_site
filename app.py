@@ -7,7 +7,8 @@ import os
 @st.cache_data
 def load_data():
     try:
-        df = pd.read_csv("movie_data.csv", encoding='utf-8')  # 'cp949'를 'utf-8'로 변경
+        url = "https://raw.githubusercontent.com/rkdrbtjd/movie_site/main/movie_data.csv"
+        df = pd.read_csv(url, encoding='utf-8')  # 'cp949'를 'utf-8'로 변경
         df.columns = df.columns.str.strip().str.lower()
         return df
     except Exception as e:
