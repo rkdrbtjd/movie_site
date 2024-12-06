@@ -44,3 +44,4 @@ movie_id,distributor,title,director,actor,genre,release_date,running_time,rating
 12341234,12341234,12341234,12341234,12341234,12341234,2024-11-25,120.0,9.9,Y,12341234.webp
 1111,1111,뽀로로,111,1111,1111,2001-01-01,11.0,9.9,Y,뽀로로.webp
 123456,롯데,rkdrbtjd,rkdrbtjd,rkdrbtjd,미스테리,2024-12-15,95.0,9.8,N,
+12345678,rbtjd,rbtjd,rbtjd,rbtjd,rbtjd,2025-5-25,95,0.0,N,
