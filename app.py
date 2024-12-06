@@ -23,18 +23,19 @@ def load_data():
     except Exception as e:
         st.error(f"데이터 로드 오류: {e}")
         return pd.DataFrame()
-
-
         
-def save_users(users):
-    pd.DataFrame(users).to_csv("movie_users.csv", index=False, encoding='cp949')
+def save_users(users, file_path="movie_users.csv"):
+    """사용자 데이터를 CSV 파일에 저장"""
+    pd.DataFrame(users).to_csv(file_path, index=False, encoding='utf-8')
 
-def load_users():
-    path = "movie_users.csv"
-    if os.path.exists(path):
-        return pd.read_csv(path, encoding='cp949').to_dict('records')
+def load_users(file_path="movie_users.csv"):
+    """CSV 파일에서 사용자 데이터를 로드"""
+    if os.path.exists(file_path):
+        data = pd.read_csv(file_path, encoding='utf-8')
+        if data.empty:
+            return []
+        return data.to_dict('records')
     return []
-
 def save_ratings(ratings):
     pd.DataFrame(ratings).to_csv("movie_ratings.csv", index=False, encoding='cp949')
 
