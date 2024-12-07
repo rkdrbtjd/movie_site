@@ -6,7 +6,7 @@ import os
 # CSV 파일 로드
 @st.cache_data
 def fetch_latest_movie_data_from_github():
-    GITHUB_API_URL = "https://raw.githubusercontent.com/YourUsername/YourRepo/main/movie_data.csv"
+    GITHUB_API_URL = "https://raw.githubusercontent.com/rkdrbtjd/movie_site/main/movie_data.csv"
     response = requests.get(GITHUB_API_URL)
     if response.status_code == 200:
         with open("movie_data.csv", "wb") as file:
