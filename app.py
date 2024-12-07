@@ -15,7 +15,7 @@ USERS_FILE_PATH = "movie_users.csv"  # GitHub 사용자 정보 파일 경로
 
 # GitHub에서 movie_users.csv 읽기
 def fetch_user_csv_from_github():
-    url = f"https://api.github.com/repos/rkdrbtjd/movie_site/contents/movie_users"
+    url = f"https://api.github.com/repos/rkdrbtjd/movie_site/contents/movie_users.csv"
     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
     response = requests.get(url, headers=headers)
 
@@ -29,7 +29,7 @@ def fetch_user_csv_from_github():
 
 # GitHub에 movie_users.csv 저장
 def update_user_csv_to_github(df, sha):
-    url = f"https://api.github.com/repos/rkdrbtjd/movie_site/contents/movie_users"
+    url = f"https://api.github.com/repos/rkdrbtjd/movie_site/contents/movie_users.csv"
     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
     content = df.to_csv(index=False, encoding="utf-8")
     data = {
