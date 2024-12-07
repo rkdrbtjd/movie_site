@@ -248,7 +248,7 @@ def main():
                   existing_rating = ratings_df[
                     (ratings_df["username"] == st.session_state.user) &
                     (ratings_df["movie"] == movie['title'])
-                ]
+                    ]
                 if not existing_rating.empty:
                     st.info("이미 이 영화에 평점을 남겼습니다.")
                 else:
