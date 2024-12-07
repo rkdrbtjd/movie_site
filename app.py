@@ -193,7 +193,7 @@ def main():
     tab1, tab2, tab3, tab4, tab5 = st.tabs(["📚 영화 검색", "⭐ 추천 영화", "📈 나의 활동", "🔧 사용자 계정 관리", "👑 관리자 보기"])
 
     # 영화 검색
-    with tab1:
+with tab1:
     st.header("🎥 영화 검색")
     search_term = st.text_input("🔍 검색", placeholder="영화 제목을 입력하세요...")
     genre_filter = st.selectbox("🎭 장르 필터", options=["모든 장르"] + df['genre'].unique().tolist())
