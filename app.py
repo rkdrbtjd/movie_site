@@ -42,7 +42,7 @@ def update_user_csv_to_github(df, sha):
 
 # GitHub에서 ratings.csv 읽기
 def fetch_ratings_csv_from_github():
-    url = f"https://api.github.com/repos/rkdrbtjd/movie_site/contents/ratings.csv"
+    url = f"https://api.github.com/repos/rkdrbtjd/movie_site/contents/movie_ratings.csv"
     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
     response = requests.get(url, headers=headers)
 
@@ -56,7 +56,7 @@ def fetch_ratings_csv_from_github():
 
 # GitHub에 ratings.csv 저장
 def update_ratings_csv_to_github(df, sha):
-    url = f"https://api.github.com/repos/rkdrbtjd/movie_site/contents/ratings.csv"
+    url = f"https://api.github.com/repos/rkdrbtjd/movie_site/contents/movie_ratings.csv"
     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
     content = df.to_csv(index=False, encoding="utf-8")
     data = {
