@@ -7,7 +7,7 @@ import requests
 import base64
 
 GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
-st.write("GitHub Token:", GITHUB_TOKEN)
+
 REPO_OWNER = "rkdrbtjd"  # GitHub 사용자명
 REPO_NAME = "movie_site"  # 레포지토리 이름
 USERS_FILE_PATH = "movie_users.csv"  # GitHub 사용자 정보 파일 경로
@@ -87,6 +87,7 @@ def hash_password(password):
 
 def main():
     st.set_page_config(page_title="영화 추천 시스템", layout="wide")
+    st.write("GitHub Token:", GITHUB_TOKEN)
     st.title("🎬 영화 추천 및 검색 시스템")
 
     # GitHub에서 사용자 정보 로드
