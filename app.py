@@ -84,9 +84,9 @@ def load_ratings():
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
+st.set_page_config(page_title="영화 추천 시스템", layout="wide")
 def main():
     
-    st.set_page_config(page_title="영화 추천 시스템", layout="wide")
     st.title("🎬 영화 추천 및 검색 시스템")
 
     # GitHub에서 사용자 정보 로드
