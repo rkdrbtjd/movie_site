@@ -75,7 +75,10 @@ def hash_password(password):
 def main():
     
     st.title("🎬 영화 추천 및 검색 시스템")
-
+    
+    # GitHub에서 사용자 정보 로드
+    user_df, user_sha = fetch_user_csv_from_github()
+    
     # 새로고침 버튼을 눌렀을 때 데이터 새로 고침
     if st.button("새로고침"):
         # 캐시된 데이터를 무효화하고 새 데이터를 로드
@@ -124,6 +127,8 @@ def main():
                         st.error("이미 존재하는 사용자명입니다.")
                     else:
                         users.append({'username': new_username, 'password': hash_password(new_password), 'role': 'user'})
+                        user_df = pd.concat([user_df, pd.DataFrame([new_user])], ignore_index=True)
+                        update_user_csv_to_github(user_df, user_sha)
                         save_users(users)
                         st.success("회원가입 성공! 이제 로그인할 수 있습니다.")
 
