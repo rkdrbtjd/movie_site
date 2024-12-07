@@ -39,6 +39,36 @@ def update_user_csv_to_github(df, sha):
         st.success("GitHub에 사용자 정보가 성공적으로 업데이트되었습니다.")
     else:
         st.error(f"GitHub 업데이트 실패. 상태 코드: {response.status_code}")
+        
+# GitHub에서 movie_ratings.csv 읽기
+def fetch_rating_csv_from_github():
+    url = f"https://api.github.com/repos/rkdrbtjd/movie_site/contents/movie_ratings.csv"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        content = base64.b64decode(response.json()["content"]).decode("utf-8")
+        sha = response.json()["sha"]
+        return pd.read_csv(io.StringIO(content), encoding="utf-8"), sha
+    else:
+        st.error(f"GitHub에서 movie_ratings.csv를 가져올 수 없습니다. 상태 코드: {response.status_code}")
+        return pd.DataFrame(), None
+
+# GitHub에 movie_ratings.csv 저장
+def update_rating_csv_to_github(df, sha):
+    url = f"https://api.github.com/repos/rkdrbtjd/movie_site/contents/movie_ratings.csv"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+    content = df.to_csv(index=False, encoding="utf-8")
+    data = {
+        "message": "Update movie_ratings.csv",
+        "content": base64.b64encode(content.encode("utf-8")).decode("utf-8"),
+        "sha": sha,
+    }
+    response = requests.put(url, json=data, headers=headers)
+    if response.status_code == 200:
+        st.success("GitHub에 movie_ratings.csv가 성공적으로 업데이트되었습니다.")
+    else:
+        st.error(f"GitHub 업데이트 실패. 상태 코드: {response.status_code}")
 
 # CSV 파일 로드
 @st.cache_data
@@ -61,45 +91,57 @@ def load_users():
     return []
 
 def save_ratings(ratings):
-    pd.DataFrame(ratings).to_csv("movie_ratings.csv", index=False, encoding='cp949')
+    pd.DataFrame(ratings).to_csv("movie_ratings.csv", index=False, encoding="utf-8")
 
 def load_ratings():
     path = "movie_ratings.csv"
     if os.path.exists(path):
-        return pd.read_csv(path, encoding='cp949').to_dict('records')
+        return pd.read_csv(path, encoding="utf-8").to_dict("records")
     return []
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def main():
+    # 전역 변수 설정
+    global ratings_sha
     
+    # 앱 제목
     st.title("🎬 영화 추천 및 검색 시스템")
     
-    # GitHub에서 사용자 정보 로드
+    # GitHub에서 사용자 정보 및 평점 정보 로드
     user_df, user_sha = fetch_user_csv_from_github()
     if user_df.empty:
         user_df = pd.DataFrame(columns=["username", "password", "role"])
     
-    # 새로고침 버튼을 눌렀을 때 데이터 새로 고침
+    # GitHub에서 평점 정보 로드
+    ratings_df, ratings_sha = fetch_rating_csv_from_github()
+    if ratings_df.empty:
+        ratings_df = pd.DataFrame(columns=["username", "movie", "rating", "review"])
+        ratings = []  # 평점 정보 초기화
+    else:
+        ratings = ratings_df.to_dict('records')  # 데이터 변환
+    
+    # 새로고침 버튼: 캐시 무효화 및 데이터 새로 고침
     if st.button("새로고침"):
-        # 캐시된 데이터를 무효화하고 새 데이터를 로드
         st.cache_data.clear()  # 캐시를 삭제
         df = load_data()  # 최신 데이터 로드
         st.success("데이터가 새로 고침되었습니다.")
     else:
         df = load_data()  # 캐시된 데이터 사용
 
+    # 사용자 및 평점 로컬 데이터 로드
     users = load_users()
-    ratings = load_ratings()
-
+    
+    # 세션 상태 초기화
     if 'user' not in st.session_state:
         st.session_state.user = None
         st.session_state.role = None
 
-    poster_folder = 'poster_file'  # 포스터가 저장된 폴더 경로
+    # 포스터 경로 설정
+    poster_folder = 'poster_url'
 
-    # 사이드바 사용자 인증
+    # 사이드바: 사용자 인증 처리
     with st.sidebar:
         st.header("👤 사용자 인증")
         if st.session_state.user:
@@ -132,16 +174,15 @@ def main():
                             "username": new_username,
                             "password": hash_password(new_password),
                             "role": "user",
-                         }
-                        users.append({'username': new_username, 'password': hash_password(new_password), 'role': 'user'})
+                        }
+                        users.append(new_user)
                         user_df = pd.concat([user_df, pd.DataFrame([new_user])], ignore_index=True)
                         update_user_csv_to_github(user_df, user_sha)
                         save_users(users)
                         st.success("회원가입 성공! 이제 로그인할 수 있습니다.")
-
         st.markdown("---")
-
-    # 영화 검색 및 기타 기능은 그대로 두기
+    
+    # 탭 정의
     tab1, tab2, tab3, tab4, tab5 = st.tabs(["📚 영화 검색", "⭐ 추천 영화", "📈 나의 활동", "🔧 사용자 계정 관리", "👑 관리자 보기"])
 
     # 영화 검색
@@ -218,9 +259,18 @@ def main():
                     if any(r['username'] == st.session_state.user and r['movie'] == movie['title'] for r in ratings):
                         st.info("이미 이 영화에 평점과 리뷰를 남겼습니다.")
                     else:
-                        rating = st.number_input(f"평점을 선택하세요 ({movie['title']})", min_value=0.0, max_value=10.0, step=0.1, format="%.2f")
-                        review = st.text_area(f"리뷰를 작성하세요 ({movie['title']})", placeholder="영화를 보고 느낀 점을 적어보세요...")
+                        # 개별 평점 입력
+                        rating = st.number_input(
+                            f"평점을 선택하세요 ({movie['title']})", 
+                            min_value=0.0, max_value=10.0, step=0.1, format="%.2f"
+                        )
+                        # 리뷰 입력
+                        review = st.text_area(
+                            f"리뷰를 작성하세요 ({movie['title']})", 
+                            placeholder="영화를 보고 느낀 점을 적어보세요..."
+                        )
 
+                        # 평점 및 리뷰 저장 버튼
                         if st.button(f"'{movie['title']}' 평점 및 리뷰 남기기", key=f"rate-review-{movie['title']}"):
                             ratings.append({
                                 'username': st.session_state.user, 
@@ -228,8 +278,10 @@ def main():
                                 'rating': round(rating, 2),
                                 'review': review if review else None
                             })
-                            save_ratings(ratings)
+                            ratings_df = pd.DataFrame(ratings)
+                            update_rating_csv_to_github(ratings_df, ratings_sha)
                             st.success("평점과 리뷰가 저장되었습니다.")
+
 
     # 추천 영화
     with tab2:
@@ -333,6 +385,7 @@ def main():
     with tab5:
         st.header("👑 관리자 보기")
         if st.session_state.role == 'admin':
+            
             # 회원 정보
             st.subheader("📋 회원 정보")
             user_info = pd.DataFrame(users)
@@ -374,7 +427,7 @@ def main():
                             f"새 평점 ({r['영화 제목']})", 
                             min_value=0.0, 
                             max_value=10.0, 
-                            step=0.1, 
+                            step=0.01, 
                             value=float(admin_ratings[idx]['rating'])
                         )
                         new_review = st.text_area(
@@ -382,17 +435,33 @@ def main():
                             value=admin_ratings[idx]['review'] if admin_ratings[idx].get('review') else ""
                         )
 
-                        # 수정 저장 버튼
+                         # 수정 저장 버튼
                         if st.button(f"리뷰 수정 저장 ({r['영화 제목']})", key=f"save-edit-{idx}"):
+                            # 데이터 수정
                             admin_ratings[idx]['rating'] = new_rating
                             admin_ratings[idx]['review'] = new_review if new_review else None
+            
+                            # 로컬 파일에 저장
                             save_ratings(admin_ratings)
+            
+                            # GitHub에 저장
+                            ratings_df = pd.DataFrame(admin_ratings)
+                            update_rating_csv_to_github(ratings_df, ratings_sha)
+            
                             st.success("리뷰가 성공적으로 수정되었습니다.")
 
                         # 삭제 버튼
                         if st.button(f"리뷰 삭제 ({r['영화 제목']})", key=f"delete-review-{idx}"):
-                            admin_ratings.pop(idx)  # 리뷰 제거
+                            # 데이터 삭제
+                            admin_ratings.pop(idx)
+            
+                            # 로컬 파일에 저장
                             save_ratings(admin_ratings)
+            
+                            # GitHub에 저장
+                            ratings_df = pd.DataFrame(admin_ratings)
+                            update_rating_csv_to_github(ratings_df, ratings_sha)
+            
                             st.warning(f"{r['사용자명']}의 리뷰가 삭제되었습니다.")
             else:
                 st.write("현재 등록된 리뷰가 없습니다.")
