@@ -208,7 +208,7 @@ def main():
                 st.markdown("---")
 
                 # 영화에 대한 평점 표시
-                movie_ratings = [r.get('rating') for r in ratings if isinstance(r, dict) and r.get('rating') is not None]
+                movie_ratings = [r.get('rating') for r in rating if isinstance(r, dict) and r.get('rating') is not None]
 
                 if movie_ratings:
                     avg_rating = round(sum(movie_ratings) / len(movie_ratings), 2)
