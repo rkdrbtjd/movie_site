@@ -40,6 +40,37 @@ def update_user_csv_to_github(df, sha):
     else:
         st.error(f"GitHub 업데이트 실패. 상태 코드: {response.status_code}")
 
+# GitHub에서 ratings.csv 읽기
+def fetch_ratings_csv_from_github():
+    url = f"https://api.github.com/repos/rkdrbtjd/movie_site/contents/ratings.csv"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        content = base64.b64decode(response.json()["content"]).decode("utf-8")
+        sha = response.json()["sha"]
+        return pd.read_csv(io.StringIO(content), encoding="utf-8"), sha
+    else:
+        st.warning("GitHub에서 ratings.csv를 찾을 수 없어 새로 생성합니다.")
+        return pd.DataFrame(columns=["username", "movie", "rating", "review"]), None
+
+# GitHub에 ratings.csv 저장
+def update_ratings_csv_to_github(df, sha):
+    url = f"https://api.github.com/repos/rkdrbtjd/movie_site/contents/ratings.csv"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+    content = df.to_csv(index=False, encoding="utf-8")
+    data = {
+        "message": "Update ratings.csv",
+        "content": base64.b64encode(content.encode("utf-8")).decode("utf-8"),
+        "sha": sha,
+    }
+    response = requests.put(url, json=data, headers=headers)
+    if response.status_code == 200:
+        st.success("GitHub에 평점 정보가 성공적으로 업데이트되었습니다.")
+    else:
+        st.error(f"GitHub 업데이트 실패. 상태 코드: {response.status_code}")
+
+
 # CSV 파일 로드
 @st.cache_data
 def load_data():
