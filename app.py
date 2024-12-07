@@ -9,9 +9,6 @@ import base64
 st.set_page_config(page_title="영화 추천 시스템", layout="wide")
 GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
 st.write("GitHub Token:", GITHUB_TOKEN)
-REPO_OWNER = "rkdrbtjd"  # GitHub 사용자명
-REPO_NAME = "movie_site"  # 레포지토리 이름
-USERS_FILE_PATH = "movie_users.csv"  # GitHub 사용자 정보 파일 경로
 
 # GitHub에서 movie_users.csv 읽기
 def fetch_user_csv_from_github():
@@ -45,16 +42,6 @@ def update_user_csv_to_github(df, sha):
 
 # CSV 파일 로드
 @st.cache_data
-def fetch_latest_movie_data_from_github():
-    GITHUB_API_URL = "https://raw.githubusercontent.com/rkdrbtjd/movie_site/main/movie_data.csv"
-    response = requests.get(GITHUB_API_URL)
-    if response.status_code == 200:
-        with open("movie_data.csv", "wb") as file:
-            file.write(response.content)  # 최신 데이터를 로컬에 저장
-        st.success("GitHub에서 최신 데이터를 가져왔습니다.")
-    else:
-        st.error(f"GitHub에서 데이터를 가져오지 못했습니다. 상태 코드: {response.status_code}")
-
 def load_data():
     try:
         df = pd.read_csv("movie_data.csv", encoding='utf-8')  # 'cp949'를 'utf-8'로 변경
@@ -63,7 +50,7 @@ def load_data():
     except Exception as e:
         st.error(f"데이터 로드 오류: {e}")
         return pd.DataFrame()
-        
+
 def save_users(users):
     pd.DataFrame(users).to_csv("movie_users.csv", index=False, encoding='cp949')
 
@@ -85,31 +72,29 @@ def load_ratings():
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-df = load_data()
-
-if df.empty:
-    st.error("영화 데이터를 불러올 수 없습니다. GitHub에서 파일을 확인하세요.")
-else:
-    st.success("영화 데이터가 성공적으로 로드되었습니다.")
-
 def main():
     
-    st.write("GitHub Token:", GITHUB_TOKEN)
     st.title("🎬 영화 추천 및 검색 시스템")
 
-    # GitHub에서 사용자 정보 로드
-    user_df, user_sha = fetch_user_csv_from_github()
+    # 새로고침 버튼을 눌렀을 때 데이터 새로 고침
+    if st.button("새로고침"):
+        # 캐시된 데이터를 무효화하고 새 데이터를 로드
+        st.cache_data.clear()  # 캐시를 삭제
+        df = load_data()  # 최신 데이터 로드
+        st.success("데이터가 새로 고침되었습니다.")
+    else:
+        df = load_data()  # 캐시된 데이터 사용
 
-    if user_df.empty:
-        user_df = pd.DataFrame(columns=["username", "password", "email", "role"])
-    
-    if "user" not in st.session_state:
+    users = load_users()
+    ratings = load_ratings()
+
+    if 'user' not in st.session_state:
         st.session_state.user = None
         st.session_state.role = None
-    
-    poster_folder = 'poster_file'
-    
-    # 사용자 인증
+
+    poster_folder = 'poster_url'  # 포스터가 저장된 폴더 경로
+
+    # 사이드바 사용자 인증
     with st.sidebar:
         st.header("👤 사용자 인증")
         if st.session_state.user:
@@ -117,37 +102,31 @@ def main():
             if st.button("로그아웃"):
                 st.session_state.user = None
                 st.session_state.role = None
-                st.success("로그아웃되었습니다.")
+                st.success("로그아웃 성공!")
         else:
             choice = st.radio("로그인/회원가입", ["로그인", "회원가입"])
             if choice == "로그인":
                 username = st.text_input("사용자명")
                 password = st.text_input("비밀번호", type="password")
                 if st.button("로그인"):
-                    user = user_df[(user_df["username"] == username) & (user_df["password"] == hash_password(password))]
-                    if not user.empty:
+                    user = next((u for u in users if u['username'] == username and u['password'] == hash_password(password)), None)
+                    if user:
                         st.session_state.user = username
-                        st.session_state.role = user.iloc[0]["role"]
+                        st.session_state.role = user['role']
                         st.success("로그인 성공!")
                     else:
                         st.error("잘못된 사용자명 또는 비밀번호입니다.")
-            elif choice == "회원가입":
+            else:
                 new_username = st.text_input("새 사용자명")
                 new_password = st.text_input("새 비밀번호", type="password")
-                
                 if st.button("회원가입"):
-                    if new_username in user_df["username"].values:
+                    if any(u['username'] == new_username for u in users):
                         st.error("이미 존재하는 사용자명입니다.")
                     else:
-                        new_user = {
-                            "username": new_username,
-                            "password": hash_password(new_password),
-                            
-                            "role": "user",
-                        }
-                        user_df = pd.concat([user_df, pd.DataFrame([new_user])], ignore_index=True)
-                        update_user_csv_to_github(user_df, user_sha)
+                        users.append({'username': new_username, 'password': hash_password(new_password), 'role': 'user'})
+                        save_users(users)
                         st.success("회원가입 성공! 이제 로그인할 수 있습니다.")
+
         st.markdown("---")
 
     # 영화 검색 및 기타 기능은 그대로 두기
@@ -179,8 +158,8 @@ def main():
                 st.subheader(movie['title'])
 
                 # 영화 데이터에서 포스터 파일 경로 추출
-                poster_path = os.path.join(poster_folder, movie.get('poster_file', ''))
-                if os.path.exists(poster_path) and pd.notna(movie.get('poster_file')):
+                poster_path = os.path.join(poster_folder, movie.get('poster_url', ''))
+                if os.path.exists(poster_path) and pd.notna(movie.get('poster_url')):
                     st.image(poster_path, width=200)  # 이미지 표시
                 else:
                     st.write("포스터 이미지가 없습니다.")  # 이미지가 없을 경우 메시지 출력
@@ -208,18 +187,14 @@ def main():
                 st.markdown("---")
 
                 # 영화에 대한 평점 표시
-                if 'rating' in locals() or 'rating' in globals():
-                    movie_ratings = [r.get('rating') for r in rating if isinstance(r, dict) and r.get('rating') is not None]
-                else:
-                    st.error("Error: 'rating' 변수가 정의되지 않았습니다.")
-                
+                movie_ratings = [r['rating'] for r in ratings if r['movie'] == movie['title']]
                 if movie_ratings:
                     avg_rating = round(sum(movie_ratings) / len(movie_ratings), 2)
                     st.write(f"사이트 평점: {'⭐' * int(avg_rating)} ({avg_rating}/10)")
                 else:
                     st.write("아직 평점이 없습니다.")
 
-                movie_ratings = [r.get('rating') for r in ratings if r.get('rating')]
+                movie_reviews = [r['review'] for r in ratings if r['movie'] == movie['title'] and r.get('review') is not None]
                 if movie_reviews:
                     st.write("리뷰:")
                     for review in movie_reviews:
@@ -413,5 +388,4 @@ def main():
             st.warning("관리자만 볼 수 있는 페이지입니다.")
 
 if __name__ == "__main__":
-
     main()
