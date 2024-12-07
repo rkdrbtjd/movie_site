@@ -177,8 +177,8 @@ def main():
                 st.subheader(movie['title'])
 
                 # 영화 데이터에서 포스터 파일 경로 추출
-                poster_path = os.path.join(poster_folder, movie.get('poster_url', ''))
-                if os.path.exists(poster_path) and pd.notna(movie.get('poster_url')):
+                poster_path = os.path.join(poster_folder, movie.get('poster_file', ''))
+                if os.path.exists(poster_path) and pd.notna(movie.get('poster_file')):
                     st.image(poster_path, width=200)  # 이미지 표시
                 else:
                     st.write("포스터 이미지가 없습니다.")  # 이미지가 없을 경우 메시지 출력
