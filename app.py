@@ -109,8 +109,11 @@ def main():
     
     # GitHub에서 사용자 정보 로드
     user_df, user_sha = fetch_user_csv_from_github()
+    ratings_df, ratings_sha = fetch_ratings_csv_from_github()
     if user_df.empty:
         user_df = pd.DataFrame(columns=["username", "password", "role"])
+    if ratings_df.empty:
+        st.warning("평점 데이터가 없습니다. 새 평점을 추가하세요.")
     
     # 새로고침 버튼을 눌렀을 때 데이터 새로 고침
     if st.button("새로고침"):
