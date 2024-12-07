@@ -245,23 +245,32 @@ def main():
                 else:
                     st.write("아직 리뷰가 없습니다.")
 
-                if st.session_state.user:
-                    if any(r['username'] == st.session_state.user and r['movie'] == movie['title'] for r in ratings):
-                        st.info("이미 이 영화에 평점과 리뷰를 남겼습니다.")
-                    else:
-                        rating = st.number_input(f"평점을 선택하세요 ({movie['title']})", min_value=0.0, max_value=10.0, step=0.1, format="%.2f")
-                        review = st.text_area(f"리뷰를 작성하세요 ({movie['title']})", placeholder="영화를 보고 느낀 점을 적어보세요...")
+                  existing_rating = ratings_df[
+                    (ratings_df["username"] == st.session_state.user) &
+                    (ratings_df["movie"] == movie['title'])
+                ]
+                if not existing_rating.empty:
+                    st.info("이미 이 영화에 평점을 남겼습니다.")
+                else:
+                    rating = st.number_input(f"평점을 선택하세요 ({movie['title']})", min_value=0.0, max_value=10.0, step=0.1, format="%.2f")
+                    review = st.text_area(f"리뷰를 작성하세요 ({movie['title']})", placeholder="영화를 보고 느낀 점을 적어보세요...")
 
-                        if st.button(f"'{movie['title']}' 평점 및 리뷰 남기기", key=f"rate-review-{movie['title']}"):
-                            ratings.append({
-                                'username': st.session_state.user, 
-                                'movie': movie['title'], 
-                                'rating': round(rating, 2),
-                                'review': review if review else None
-                            })
-                            save_ratings(ratings)
-                            st.success("평점과 리뷰가 저장되었습니다.")
+                    if st.button(f"'{movie['title']}' 평점 및 리뷰 남기기", key=f"rate-review-{movie['title']}"):
+                        new_rating = {
+                            "username": st.session_state.user,
+                            "movie": movie['title'],
+                            "rating": round(rating, 2),
+                            "review": review if review else None
+                        }
 
+                        # 평점을 DataFrame에 추가
+                        ratings_df = pd.concat([ratings_df, pd.DataFrame([new_rating])], ignore_index=True)
+
+                        # GitHub에 업데이트
+                        update_ratings_csv_to_github(ratings_df, ratings_sha)
+                        st.success("평점과 리뷰가 저장되었습니다.")
+            else:
+                st.warning("로그인 후에 평점을 남길 수 있습니다.")
     # 추천 영화
     with tab2:
         st.header("⭐ 추천 영화")
