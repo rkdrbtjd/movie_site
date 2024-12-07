@@ -47,13 +47,23 @@ def fetch_ratings_csv_from_github():
     response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
-        content = base64.b64decode(response.json()["content"]).decode("utf-8")
-        sha = response.json()["sha"]
-        return pd.read_csv(io.StringIO(content), encoding="utf-8"), sha
+        try:
+            # UTF-8로 디코딩 시도
+            content = base64.b64decode(response.json()["content"]).decode("utf-8")
+            sha = response.json()["sha"]
+            return pd.read_csv(io.StringIO(content), encoding="utf-8"), sha
+        except UnicodeDecodeError:
+            try:
+                # UTF-8 실패 시 CP949로 디코딩 시도
+                content = base64.b64decode(response.json()["content"]).decode("cp949")
+                sha = response.json()["sha"]
+                return pd.read_csv(io.StringIO(content), encoding="cp949"), sha
+            except Exception as e:
+                st.error(f"ratings.csv를 읽는 데 실패했습니다: {e}")
+                return pd.DataFrame(columns=["username", "movie", "rating", "review"]), None
     else:
-        st.warning("GitHub에서 ratings.csv를 찾을 수 없어 새로 생성합니다.")
+        st.warning(f"GitHub에서 ratings.csv를 찾을 수 없어 새로 생성합니다. 상태 코드: {response.status_code}")
         return pd.DataFrame(columns=["username", "movie", "rating", "review"]), None
-
 # GitHub에 ratings.csv 저장
 def update_ratings_csv_to_github(df, sha):
     url = f"https://api.github.com/repos/rkdrbtjd/movie_site/contents/movie_ratings.csv"
