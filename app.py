@@ -87,7 +87,7 @@ def hash_password(password):
 
 def main():
     st.set_page_config(page_title="영화 추천 시스템", layout="wide")
-    st.write("GitHub Token:", GITHUB_TOKEN)
+    
     st.title("🎬 영화 추천 및 검색 시스템")
 
     # GitHub에서 사용자 정보 로드
@@ -400,4 +400,5 @@ def main():
             st.warning("관리자만 볼 수 있는 페이지입니다.")
 
 if __name__ == "__main__":
+st.write("GitHub Token:", GITHUB_TOKEN)
     main()
