@@ -106,7 +106,9 @@ def main():
     if "user" not in st.session_state:
         st.session_state.user = None
         st.session_state.role = None
+    
     poster_folder = 'poster_file'
+    
     # 사용자 인증
     with st.sidebar:
         st.header("👤 사용자 인증")
