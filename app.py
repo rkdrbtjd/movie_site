@@ -2,6 +2,42 @@ import streamlit as st
 import pandas as pd
 import hashlib
 import os
+import requests
+import base64
+
+GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
+REPO_OWNER = "rkdrbtjd"  # GitHub 사용자명
+REPO_NAME = "movie_site"  # 레포지토리 이름
+USERS_FILE_PATH = "movie_users.csv"  # GitHub 사용자 정보 파일 경로
+
+# GitHub에서 movie_users.csv 읽기
+def fetch_user_csv_from_github():
+    url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{USERS_FILE_PATH}"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        content = base64.b64decode(response.json()["content"]).decode("utf-8")
+        sha = response.json()["sha"]
+        return pd.read_csv(io.StringIO(content), encoding="utf-8"), sha
+    else:
+        st.error(f"GitHub에서 데이터를 가져올 수 없습니다. 상태 코드: {response.status_code}")
+        return pd.DataFrame(), None
+
+# GitHub에 movie_users.csv 저장
+def update_user_csv_to_github(df, sha):
+    url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{USERS_FILE_PATH}"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+    content = df.to_csv(index=False, encoding="utf-8")
+    data = {
+        "message": "Update movie_users.csv",
+        "content": base64.b64encode(content.encode("utf-8")).decode("utf-8"),
+        "sha": sha,
+    }
+    response = requests.put(url, json=data, headers=headers)
+    if response.status_code == 200:
+        st.success("GitHub에 사용자 정보가 성공적으로 업데이트되었습니다.")
+    else:
+        st.error(f"GitHub 업데이트 실패. 상태 코드: {response.status_code}")
 
 # CSV 파일 로드
 @st.cache_data
@@ -49,25 +85,17 @@ def main():
     st.set_page_config(page_title="영화 추천 시스템", layout="wide")
     st.title("🎬 영화 추천 및 검색 시스템")
 
-    # 새로고침 버튼을 눌렀을 때 데이터 새로 고침
-    if st.button("새로고침"):
-        # 캐시된 데이터를 무효화하고 새 데이터를 로드
-        st.cache_data.clear()  # 캐시를 삭제
-        df = load_data()  # 최신 데이터 로드
-        st.success("데이터가 새로 고침되었습니다.")
-    else:
-        df = load_data()  # 캐시된 데이터 사용
+    # GitHub에서 사용자 정보 로드
+    user_df, user_sha = fetch_user_csv_from_github()
 
-    users = load_users()
-    ratings = load_ratings()
-
-    if 'user' not in st.session_state:
+    if user_df.empty:
+        user_df = pd.DataFrame(columns=["username", "password", "email", "role"])
+    
+    if "user" not in st.session_state:
         st.session_state.user = None
         st.session_state.role = None
 
-    poster_folder = 'poster_file'  # 포스터가 저장된 폴더 경로
-
-    # 사이드바 사용자 인증
+    # 사용자 인증
     with st.sidebar:
         st.header("👤 사용자 인증")
         if st.session_state.user:
@@ -75,31 +103,37 @@ def main():
             if st.button("로그아웃"):
                 st.session_state.user = None
                 st.session_state.role = None
-                st.success("로그아웃 성공!")
+                st.success("로그아웃되었습니다.")
         else:
             choice = st.radio("로그인/회원가입", ["로그인", "회원가입"])
             if choice == "로그인":
                 username = st.text_input("사용자명")
                 password = st.text_input("비밀번호", type="password")
                 if st.button("로그인"):
-                    user = next((u for u in users if u['username'] == username and u['password'] == hash_password(password)), None)
-                    if user:
+                    user = user_df[(user_df["username"] == username) & (user_df["password"] == hash_password(password))]
+                    if not user.empty:
                         st.session_state.user = username
-                        st.session_state.role = user['role']
+                        st.session_state.role = user.iloc[0]["role"]
                         st.success("로그인 성공!")
                     else:
                         st.error("잘못된 사용자명 또는 비밀번호입니다.")
-            else:
+            elif choice == "회원가입":
                 new_username = st.text_input("새 사용자명")
                 new_password = st.text_input("새 비밀번호", type="password")
+                email = st.text_input("이메일")
                 if st.button("회원가입"):
-                    if any(u['username'] == new_username for u in users):
+                    if new_username in user_df["username"].values:
                         st.error("이미 존재하는 사용자명입니다.")
                     else:
-                        users.append({'username': new_username, 'password': hash_password(new_password), 'role': 'user'})
-                        save_users(users)
+                        new_user = {
+                            "username": new_username,
+                            "password": hash_password(new_password),
+                            "email": email,
+                            "role": "user",
+                        }
+                        user_df = pd.concat([user_df, pd.DataFrame([new_user])], ignore_index=True)
+                        update_user_csv_to_github(user_df, user_sha)
                         st.success("회원가입 성공! 이제 로그인할 수 있습니다.")
-
         st.markdown("---")
 
     # 영화 검색 및 기타 기능은 그대로 두기
