@@ -134,7 +134,7 @@ def main():
             elif choice == "회원가입":
                 new_username = st.text_input("새 사용자명")
                 new_password = st.text_input("새 비밀번호", type="password")
-                email = st.text_input("이메일")
+                
                 if st.button("회원가입"):
                     if new_username in user_df["username"].values:
                         st.error("이미 존재하는 사용자명입니다.")
@@ -142,7 +142,7 @@ def main():
                         new_user = {
                             "username": new_username,
                             "password": hash_password(new_password),
-                            "email": email,
+                            
                             "role": "user",
                         }
                         user_df = pd.concat([user_df, pd.DataFrame([new_user])], ignore_index=True)
