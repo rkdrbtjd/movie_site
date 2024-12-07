@@ -1,56 +1,29 @@
-from github import Github
 import streamlit as st
 import pandas as pd
 import hashlib
 import os
 
-
-GITHUB_TOKEN = "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"
-REPO_NAME = "rkdrbtjd/movie_site"
-RATINGS_FILE_PATH = "rating.csv"
-
-# CSV 파일 관리 함수
-def load_ratings_from_github():
-    try:
-        github = Github(GITHUB_TOKEN)
-        repo = github.get_repo(REPO_NAME)
-        file = repo.get_contents(RATINGS_FILE_PATH)
-        csv_content = file.decoded_content.decode("utf-8")
-        ratings = pd.read_csv(pd.compat.StringIO(csv_content)).to_dict('records')
-        return ratings, file.sha
-    except Exception as e:
-        st.error(f"GitHub에서 데이터를 불러오는 중 오류가 발생했습니다: {e}")
-        return [], None
-
-def save_ratings_to_github(ratings, file_sha):
-    try:
-        github = Github(GITHUB_TOKEN)
-        repo = github.get_repo(REPO_NAME)
-        updated_csv = pd.DataFrame(ratings).to_csv(index=False)
-        repo.update_file(
-            RATINGS_FILE_PATH,
-            "Update rating.csv with new reviews",
-            updated_csv,
-            file_sha
-        )
-        st.success("GitHub에 데이터가 성공적으로 저장되었습니다.")
-    except Exception as e:
-        st.error(f"GitHub에 데이터를 저장하는 중 오류가 발생했습니다: {e}")
-
-
-
 # CSV 파일 로드
 @st.cache_data
+def fetch_latest_movie_data_from_github():
+    GITHUB_API_URL = "https://raw.githubusercontent.com/YourUsername/YourRepo/main/movie_data.csv"
+    response = requests.get(GITHUB_API_URL)
+    if response.status_code == 200:
+        with open("movie_data.csv", "wb") as file:
+            file.write(response.content)  # 최신 데이터를 로컬에 저장
+        st.success("GitHub에서 최신 데이터를 가져왔습니다.")
+    else:
+        st.error(f"GitHub에서 데이터를 가져오지 못했습니다. 상태 코드: {response.status_code}")
+
 def load_data():
     try:
-        url = "https://raw.githubusercontent.com/rkdrbtjd/movie_site/main/movie_data.csv"
-        df = pd.read_csv(url, encoding='utf-8')  # 'cp949'를 'utf-8'로 변경
+        df = pd.read_csv("movie_data.csv", encoding='utf-8')  # 'cp949'를 'utf-8'로 변경
         df.columns = df.columns.str.strip().str.lower()
         return df
     except Exception as e:
         st.error(f"데이터 로드 오류: {e}")
         return pd.DataFrame()
-
+        
 def save_users(users):
     pd.DataFrame(users).to_csv("movie_users.csv", index=False, encoding='cp949')
 
@@ -187,7 +160,7 @@ def main():
                 st.markdown("---")
 
                 # 영화에 대한 평점 표시
-                movie_ratings = [r['rating'] for r in ratings if r['movie'] == movie['title']]
+                movie_ratings = [r.get('rating') for r in ratings if r.get('movie') == movie.get('title')]
                 if movie_ratings:
                     avg_rating = round(sum(movie_ratings) / len(movie_ratings), 2)
                     st.write(f"사이트 평점: {'⭐' * int(avg_rating)} ({avg_rating}/10)")
@@ -363,24 +336,24 @@ def main():
                             min_value=0.0, 
                             max_value=10.0, 
                             step=0.1, 
-                            value=float(r['평점'])
+                            value=float(admin_ratings[idx]['rating'])
                         )
                         new_review = st.text_area(
                             f"새 리뷰 ({r['영화 제목']})", 
-                            value=r['review'] if pd.notna(r['리뷰']) else ""
+                            value=admin_ratings[idx]['review'] if admin_ratings[idx].get('review') else ""
                         )
 
                         # 수정 저장 버튼
                         if st.button(f"리뷰 수정 저장 ({r['영화 제목']})", key=f"save-edit-{idx}"):
                             admin_ratings[idx]['rating'] = new_rating
                             admin_ratings[idx]['review'] = new_review if new_review else None
-                            save_ratings_to_github(admin_ratings, ratings_file_sha)
+                            save_ratings(admin_ratings)
                             st.success("리뷰가 성공적으로 수정되었습니다.")
 
                         # 삭제 버튼
                         if st.button(f"리뷰 삭제 ({r['영화 제목']})", key=f"delete-review-{idx}"):
                             admin_ratings.pop(idx)  # 리뷰 제거
-                            save_ratings_to_github(admin_ratings, ratings_file_sha)
+                            save_ratings(admin_ratings)
                             st.warning(f"{r['사용자명']}의 리뷰가 삭제되었습니다.")
             else:
                 st.write("현재 등록된 리뷰가 없습니다.")
