@@ -78,6 +78,8 @@ def main():
     
     # GitHub에서 사용자 정보 로드
     user_df, user_sha = fetch_user_csv_from_github()
+    if user_df.empty:
+        user_df = pd.DataFrame(columns=["username", "password", "role"])
     
     # 새로고침 버튼을 눌렀을 때 데이터 새로 고침
     if st.button("새로고침"):
