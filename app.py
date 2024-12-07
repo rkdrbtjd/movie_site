@@ -97,7 +97,7 @@ def main():
         st.session_state.user = None
         st.session_state.role = None
 
-    poster_folder = 'poster_url'  # 포스터가 저장된 폴더 경로
+    poster_folder = 'poster_file'  # 포스터가 저장된 폴더 경로
 
     # 사이드바 사용자 인증
     with st.sidebar:
