@@ -85,6 +85,12 @@ def load_ratings():
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
+df = load_data()
+
+if df.empty:
+    st.error("영화 데이터를 불러올 수 없습니다. GitHub에서 파일을 확인하세요.")
+else:
+    st.success("영화 데이터가 성공적으로 로드되었습니다.")
 
 def main():
     
