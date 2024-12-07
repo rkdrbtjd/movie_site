@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import hashlib
 import os
+import io
 import requests
 import base64
 
@@ -12,9 +13,10 @@ USERS_FILE_PATH = "movie_users.csv"  # GitHub 사용자 정보 파일 경로
 
 # GitHub에서 movie_users.csv 읽기
 def fetch_user_csv_from_github():
-    url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{USERS_FILE_PATH}"
+    url = f"https://api.github.com/repos/rkdrbtjd/movie_site/contents/movie_users"
     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
     response = requests.get(url, headers=headers)
+
     if response.status_code == 200:
         content = base64.b64decode(response.json()["content"]).decode("utf-8")
         sha = response.json()["sha"]
@@ -82,6 +84,12 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def main():
+
+    if "GITHUB_TOKEN" in st.secrets:
+        st.write("GITHUB_TOKEN:", st.secrets["GITHUB_TOKEN"])  # 디버깅용
+    else:
+        st.error("GITHUB_TOKEN이 설정되지 않았습니다.")
+    
     st.set_page_config(page_title="영화 추천 시스템", layout="wide")
     st.title("🎬 영화 추천 및 검색 시스템")
 
