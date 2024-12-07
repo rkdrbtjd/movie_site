@@ -128,6 +128,11 @@ def main():
                     if any(u['username'] == new_username for u in users):
                         st.error("이미 존재하는 사용자명입니다.")
                     else:
+                        new_user = {
+                            "username": new_username,
+                            "password": hash_password(new_password),
+                            "role": "user",
+                         }
                         users.append({'username': new_username, 'password': hash_password(new_password), 'role': 'user'})
                         user_df = pd.concat([user_df, pd.DataFrame([new_user])], ignore_index=True)
                         update_user_csv_to_github(user_df, user_sha)
