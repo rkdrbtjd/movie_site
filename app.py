@@ -245,7 +245,7 @@ def main():
                 else:
                     st.write("아직 리뷰가 없습니다.")
 
-                  existing_rating = ratings_df[
+                    existing_rating = ratings_df[
                     (ratings_df["username"] == st.session_state.user) &
                     (ratings_df["movie"] == movie['title'])
                     ]
