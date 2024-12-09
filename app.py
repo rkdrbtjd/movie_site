@@ -139,7 +139,7 @@ def main():
         st.session_state.role = None
 
     # 포스터 경로 설정
-    poster_folder = 'poster_file'
+    poster_folder = 'poster_url'
 
     # 사이드바: 사용자 인증 처리
     with st.sidebar:
